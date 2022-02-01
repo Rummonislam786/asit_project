@@ -1,10 +1,11 @@
 // ignore_for_file: prefer_const_constructors
-
 import 'package:asit_project/aboutpage.dart';
 import 'package:flutter/material.dart';
 import 'Settings.dart';
 import 'secondscreen.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:geocoding/geocoding.dart';
+import 'package:geolocator/geolocator.dart';
 
 void main() {
   runApp(const MyApp());
@@ -26,28 +27,75 @@ class MyApp extends StatelessWidget {
           Theme.of(context).textTheme,
         ),
       ),
-      home: HomeScreen(title: title),
+      home: homepage(title: title),
     );
   }
 }
 
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({
-    Key? key,
-    required this.title,
-  }) : super(key: key);
-
+class homepage extends StatefulWidget {
+  const homepage({Key? key, required this.title}) : super(key: key);
   final String title;
 
-  get aboutpage => null;
+  @override
+  _homepageState createState() => _homepageState();
+}
+
+class _homepageState extends State<homepage> {
+  String location = "";
+  String Address = "";
+  //Position? position;
+
+  Future<Position> _getGeoLocationPosition() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+    // Test if location services are enabled.
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      // Location services are not enabled don't continue
+      // accessing the position and request users of the
+      // App to enable the location services.
+      await Geolocator.openLocationSettings();
+      return Future.error('Location services are disabled.');
+    }
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        // Permissions are denied, next time you could try
+        // requesting permissions again (this is also where
+        // Android's shouldShowRequestPermissionRationale
+        // returned true. According to Android guidelines
+        // your App should show an explanatory UI now.
+        return Future.error('Location permissions are denied');
+      }
+    }
+    if (permission == LocationPermission.deniedForever) {
+      // Permissions are denied forever, handle appropriately.
+      return Future.error(
+          'Location permissions are permanently denied, we cannot request permissions.');
+    }
+    // When we reach here, permissions are granted and we can
+    // continue accessing the position of the device.
+    return await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high);
+  }
+
+  Future<void> GetAddressFromLatLong(Position position) async {
+    List<Placemark> placemarks =
+        await placemarkFromCoordinates(position.latitude, position.longitude);
+    print(placemarks);
+    Placemark place = placemarks[0];
+    Address =
+        '${place.street}, ${place.subLocality}, ${place.locality}, ${place.postalCode}, ${place.country}';
+    setState(() {});
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(title),
+        title: Text("PROJECT"),
       ),
-      body: MainMenuBody(),
       endDrawer: Drawer(
         child: ListView(
           padding: EdgeInsets.zero,
@@ -56,7 +104,7 @@ class HomeScreen extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Colors.indigo,
               ),
-              child: Text("Side menu bar/Drawer"),
+              child: Text("Side menu bar/Drawer $Address"),
             ),
             ListTile(
               title: Text("Home"),
@@ -86,10 +134,26 @@ class HomeScreen extends StatelessWidget {
               onTap: () {},
               trailing: Icon(Icons.accessibility_new),
             ),
-            
+            ListTile(
+              title: Text("Address: $Address"),
+            ),
+            ListTile(
+              title: Text("Latitude: } "),
+            ),
+            Center(
+              child: ListTile(
+                  onTap: () async {
+                    Position position = await _getGeoLocationPosition();
+                    location =
+                        'Lat: ${position.latitude} , Long: ${position.longitude}';
+                    GetAddressFromLatLong(position);
+                  },
+                  title: Text("Get Location $location")),
+            )
           ],
         ),
       ),
+      body: MainMenuBody(),
     );
   }
 }
