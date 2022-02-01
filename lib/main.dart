@@ -100,11 +100,10 @@ class _homepageState extends State<homepage> {
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
-            DrawerHeader(
-              decoration: BoxDecoration(
-                color: Colors.indigo,
-              ),
-              child: Text("Side menu bar/Drawer $Address"),
+            UserAccountsDrawerHeader(
+              accountName: Text("Rummon"),
+              accountEmail: Text("islam.rummon786@gmail.com"),
+              currentAccountPicture: FlutterLogo(),
             ),
             ListTile(
               title: Text("Home"),
